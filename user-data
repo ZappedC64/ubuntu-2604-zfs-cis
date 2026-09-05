@@ -1,0 +1,77 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+
+  network:
+    network:
+      version: 2
+      ethernets:
+        alleths:
+          match:
+            name: "en*"
+          dhcp4: true
+
+  # Guided ZFS root layout: creates bpool (/boot), rpool/ROOT/ubuntu_<id> (/),
+  # rpool/home (/home), and a swap partition. This is the only ZFS layout
+  # exposed to autoinstall today; extra datasets are added below.
+  storage:
+    layout:
+      name: zfs
+    swap:
+      size: 2G
+
+  identity:
+    hostname: ubuntu-zfs-test
+    username: yourusername
+    # Generate with: openssl passwd -6
+    # Replace the string below before building the ISO.
+    password: "$6$CYOURPASSWORD_HASH"
+
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  packages:
+    - vim
+    - zsh
+
+  user-data:
+    chpasswd:
+      expire: false
+
+  late-commands:
+    # Set zsh as rwurttem's login shell
+    - curtin in-target -- chsh -s /usr/bin/zsh rwurttem
+
+    # Ubuntu's guided ZFS layout already creates var and its usual zsys-style
+    # children (var/log, var/lib/apt, etc.) automatically. It does NOT create
+    # var/tmp, var/log/audit, or tmp -- those we create ourselves. Then apply
+    # quotas to var and tmp either way.
+    - |
+      curtin in-target -- bash -c '
+      set -euo pipefail
+      ROOTDS=$(zfs list -H -o name -t filesystem | grep -E "^rpool/ROOT/[^/]+$")
+
+      for sub in var/tmp var/log/audit tmp; do
+        ds="$ROOTDS/$sub"
+        if zfs list -H "$ds" >/dev/null 2>&1; then
+          continue
+        fi
+        path="/$sub"
+        stage=/mnt/zfs-stage
+        mkdir -p "$stage"
+        zfs create -o mountpoint="$stage" "$ds"
+        if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then
+          cp -a "$path"/. "$stage"/
+        fi
+        rm -rf "${path:?}"/*
+        zfs umount "$ds"
+        zfs set mountpoint="$path" "$ds"
+      done
+
+      zfs set quota=8G "$ROOTDS/var"
+      zfs set quota=6G "$ROOTDS/tmp"
+      '
