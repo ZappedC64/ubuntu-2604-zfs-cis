@@ -26,4 +26,5 @@ Temporary Items
 # Claude
 .claude/
 .codegraph/
+CLAUDE.md
 CLAUDE.local.md
