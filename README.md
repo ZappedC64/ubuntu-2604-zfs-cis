@@ -22,6 +22,14 @@ It was built and tested in a Proxmox VM. Nothing here is Proxmox-specific except
 the "build the VM" section — the `user-data` file itself works on any hypervisor
 or bare metal that boots the Ubuntu Server 26.04.1 ISO.
 
+## Result
+
+`zfs list` / `zpool list` on a freshly installed system, showing the guided
+layout plus the `var/tmp`, `var/log/audit`, and `tmp` datasets added by
+`late-commands`:
+
+![zfs list and zpool list output on the installed system](images/zfs-list-output.png)
+
 ## Why autoinstall instead of the interactive installer
 
 The interactive Server installer (Subiquity's text UI) only offers **LVM** or a
