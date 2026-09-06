@@ -43,8 +43,8 @@ autoinstall:
       expire: false
 
   late-commands:
-    # Set zsh as rwurttem's login shell
-    - curtin in-target -- chsh -s /usr/bin/zsh rwurttem
+    # Set zsh as the login shell -- update the username to match identity.username above
+    - curtin in-target -- chsh -s /usr/bin/zsh yourusername
 
     # Ubuntu's guided ZFS layout already creates var and its usual zsys-style
     # children (var/log, var/lib/apt, etc.) automatically. It does NOT create
